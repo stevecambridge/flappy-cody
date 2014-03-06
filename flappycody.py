@@ -1,9 +1,16 @@
 import sys, pygame, random
 pygame.init()
 
+
+#misc data
+black = 0, 0, 0
+speed = [0,0]
+grav_counter = 0
+pipe_counter = 0
 width = 640
 height = 480
 
+#screen init
 screen = pygame.display.set_mode((640,480))
 
 #object classes
@@ -49,18 +56,14 @@ class Background(pygame.sprite.Sprite):
 		self.image = pygame.image.load("background.png")
 		self.rect = pygame.Rect(0,0,1,1)
 
-#instantiate pieces for testing
+#initialzize cody and background
 cody = Cody()
 background = Background()
 
+#groups
 player = pygame.sprite.Group(cody)
-pipes = pygame.sprite.Group()
+pipes_group = pygame.sprite.Group()
 scenery = pygame.sprite.Group(background)
-
-black = 0, 0, 0
-speed = [0,0]
-grav_counter = 0
-pipe_counter = 0
 
 #main game loop
 running = True
@@ -79,9 +82,9 @@ while running:
 
 	#move things
 	cody.rect = cody.rect.move(speed)
-	for Downpipe in pipes:
+	for Downpipe in pipes_group:
 		Downpipe.rect = Downpipe.rect.move(-1,0)
-	for Uppipe in pipes:
+	for Uppipe in pipes_group:
 		Uppipe.rect = Uppipe.rect.move(-1,0)
 	#gate.rect = gate.rect.move(-1,0)
 
@@ -98,28 +101,29 @@ while running:
 		speed[1] = 0
 		cody.rect = cody.rect.move(0,1)
 	#GAMEOVER
-	for Uppipe in pipes:
+	for Uppipe in pipes_group:
 		if pygame.sprite.collide_rect(cody, Uppipe):
 			running = False
-	for Downpipe in pipes:
+	for Downpipe in pipes_group:
 		if pygame.sprite.collide_rect(cody, Downpipe):
 			running = False
 
 	#drawing
 	#screen.fill(black)
 	scenery.draw(screen)
-	pipes.draw(screen)
+	pipes_group.draw(screen)
 	player.draw(screen)
 	pygame.display.flip()
 
 	#pipe deletion
-	for Downpipe in pipes:
+	for Downpipe in pipes_group:
 		if Downpipe.rect.right < 0:
 			Downpipe.kill()
-	for Uppipe in pipes:
+			pipes_group.remove(Downpipe)
+	for Uppipe in pipes_group:
 		if Uppipe.rect.right < 0:
 			Downpipe.kill()
-
+			pipes_group.remove(Uppipe)
 
 	#game timers
 	pygame.time.wait(0)
@@ -128,10 +132,12 @@ while running:
 	else:
 		grav_counter += 1
 
-	if pipe_counter == 10:
-		x = random.randint(0,100)
-		pipes.add(Uppipe(x))
-		pipes.add(Downpipe(x))
+	if pipe_counter == 100 :
+		x = random.randint(0,120)
+		u = Uppipe(x)
+		d = Downpipe(x)
+		pipes_group.add(u)
+		pipes_group.add(d)
 		pipe_counter = 0
 	else:
 		pipe_counter += 1
