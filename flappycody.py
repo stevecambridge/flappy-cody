@@ -1,4 +1,4 @@
-import sys, pygame
+import sys, pygame, random
 pygame.init()
 
 width = 640
@@ -6,29 +6,65 @@ height = 480
 
 screen = pygame.display.set_mode((640,480))
 
-#background = pygame.image.load("background.png")
-#backgroundrect = pygame.Rect(0,0,1,1)
+#object classes
+class Cody(pygame.sprite.Sprite):
 
-cody = pygame.image.load("codyinthebox.png")
-codyrect = cody.get_rect()
-codyrect = codyrect.move(250,150)
+	#constructor
+	def __init__(self):
+		pygame.sprite.Sprite.__init__(self)
+		self.image = pygame.image.load("codyinthebox.png")
+		self.rect = self.image.get_rect()
+		self.rect = self.rect.move(250,150)
 
-#pipe dimensions: ~65x205
-uppipe = pygame.image.load("uppipe.png")
-uppiperect = uppipe.get_rect()
-uppiperect = uppiperect.move(640,400)
+class Downpipe(pygame.sprite.Sprite):
 
-downpipe = pygame.image.load("downpipe.png")
-downpiperect = downpipe.get_rect()
-downpiperect = downpiperect.move(640,-20)
+	#constructor
+	def __init__(self, randFactor):
+		pygame.sprite.Sprite.__init__(self)
+		self.image = pygame.image.load("downpipe.png")
+		self.rect = self.image.get_rect()
+		self.rect = self.rect.move(640,0-randFactor)
 
-gate = pygame.Rect(652,225,1,175)
+class Uppipe(pygame.sprite.Sprite):
+
+	#constructor
+	def __init__(self, randFactor):
+		pygame.sprite.Sprite.__init__(self)
+		self.image = pygame.image.load("uppipe.png")
+		self.rect = self.image.get_rect()
+		self.rect = self.rect.move(640,400-randFactor)
+
+class Gate(pygame.sprite.Sprite):
+
+	#constructor
+	def __init__(self):
+		pygame.sprite.Sprite.__init__(self)
+		self.rect = pygame.Rect(672,0,1,480)
+
+class Background(pygame.sprite.Sprite):
+
+	#constructor
+	def __init__(self):
+		pygame.sprite.Sprite.__init__(self)
+		self.image = pygame.image.load("background.png")
+		self.rect = pygame.Rect(0,0,1,1)
+
+#instantiate pieces for testing
+cody = Cody()
+background = Background()
+
+player = pygame.sprite.Group(cody)
+pipes = pygame.sprite.Group()
+scenery = pygame.sprite.Group(background)
 
 black = 0, 0, 0
 speed = [0,0]
-counter = 0
+grav_counter = 0
+pipe_counter = 0
 
-while 1:
+#main game loop
+running = True
+while running:
 
 	#check events
 	for event in pygame.event.get():
@@ -37,39 +73,65 @@ while 1:
 		if event.type == pygame.KEYDOWN: 
 			if event.key == pygame.K_SPACE:
 				speed = [0,-4]
+				grav_counter = 0
+			elif event.key == pygame.K_ESC:
+				sys.exit()
 
 	#move things
-	codyrect = codyrect.move(speed)
-	downpiperect = downpiperect.move(-1,0)
-	uppiperect = uppiperect.move(-1,0)
-	gate = gate.move(-1,0)
+	cody.rect = cody.rect.move(speed)
+	for Downpipe in pipes:
+		Downpipe.rect = Downpipe.rect.move(-1,0)
+	for Uppipe in pipes:
+		Uppipe.rect = Uppipe.rect.move(-1,0)
+	#gate.rect = gate.rect.move(-1,0)
 
-	#gravity simulation
-	if counter % 8 == 0:
+	#gravity simulation w/ max fall speed
+	if grav_counter % 8 == 0:
 		speed[1] = speed[1] + 1
-
-	#max fall speed
 	if speed[1] > 4:
 		speed[1] = 5
 
 	#collision checking
-	if codyrect.bottom > height:
+	if cody.rect.bottom > height:
 		speed[1] = 0
-	if codyrect.top < 0:
+	if cody.rect.top < 0:
 		speed[1] = 0
-		codyrect = codyrect.move(0,1)
+		cody.rect = cody.rect.move(0,1)
+	#GAMEOVER
+	for Uppipe in pipes:
+		if pygame.sprite.collide_rect(cody, Uppipe):
+			running = False
+	for Downpipe in pipes:
+		if pygame.sprite.collide_rect(cody, Downpipe):
+			running = False
 
 	#drawing
-	screen.fill(black)
-	screen.blit(cody, codyrect)
-	screen.blit(downpipe, downpiperect)
-	screen.blit(uppipe, uppiperect)
-	#screen.blit(background, backgroundrect)
+	#screen.fill(black)
+	scenery.draw(screen)
+	pipes.draw(screen)
+	player.draw(screen)
 	pygame.display.flip()
 
+	#pipe deletion
+	for Downpipe in pipes:
+		if Downpipe.rect.right < 0:
+			Downpipe.kill()
+	for Uppipe in pipes:
+		if Uppipe.rect.right < 0:
+			Downpipe.kill()
+
+
 	#game timers
-	pygame.time.wait(8)
-	if counter > 10000:
-		counter = 0
+	pygame.time.wait(0)
+	if grav_counter > 100:
+		grav_counter = 0
 	else:
-		counter += 1 
+		grav_counter += 1
+
+	if pipe_counter == 10:
+		x = random.randint(0,100)
+		pipes.add(Uppipe(x))
+		pipes.add(Downpipe(x))
+		pipe_counter = 0
+	else:
+		pipe_counter += 1
