@@ -1,5 +1,6 @@
 import sys, pygame, random
 pygame.init()
+myfont = pygame.font.SysFont("monospace", 15, True, False)
 
 
 #misc data
@@ -9,6 +10,7 @@ grav_counter = 0
 pipe_counter = 0
 width = 640
 height = 480
+score = 0
 
 #screen init
 screen = pygame.display.set_mode((640,480))
@@ -64,6 +66,7 @@ background = Background()
 player = pygame.sprite.Group(cody)
 pipes_group = pygame.sprite.Group()
 scenery = pygame.sprite.Group(background)
+gates = pygame.sprite.Group()
 
 #main game loop
 running = True
@@ -71,21 +74,21 @@ while running:
 
 	#check events
 	for event in pygame.event.get():
-		if event.type == pygame.QUIT: 
+		if event.type == pygame.QUIT:
 			sys.exit()
 		if event.type == pygame.KEYDOWN: 
 			if event.key == pygame.K_SPACE:
-				speed = [0,-4]
+				speed = [0,-5]
 				grav_counter = 0
 			elif event.key == pygame.K_ESC:
 				sys.exit()
 
 	#move things
 	cody.rect = cody.rect.move(speed)
-	for Downpipe in pipes_group:
-		Downpipe.rect = Downpipe.rect.move(-1,0)
-	for Uppipe in pipes_group:
-		Uppipe.rect = Uppipe.rect.move(-1,0)
+	for x in pipes_group:
+		x.rect = x.rect.move(-1,0)
+	for x in pipes_group:
+		x.rect = x.rect.move(-1,0)
 	#gate.rect = gate.rect.move(-1,0)
 
 	#gravity simulation w/ max fall speed
@@ -101,12 +104,15 @@ while running:
 		speed[1] = 0
 		cody.rect = cody.rect.move(0,1)
 	#GAMEOVER
-	for Uppipe in pipes_group:
-		if pygame.sprite.collide_rect(cody, Uppipe):
+	for x in pipes_group:
+		if pygame.sprite.collide_rect(cody, x):
 			running = False
-	for Downpipe in pipes_group:
-		if pygame.sprite.collide_rect(cody, Downpipe):
-			running = False
+	#scoring
+	for y in gates:
+		if pygame.sprite.collide_rect(cody, y):
+			y.kill()
+			gates.remove(y)
+			score = score + 1
 
 	#drawing
 	#screen.fill(black)
@@ -114,30 +120,35 @@ while running:
 	pipes_group.draw(screen)
 	player.draw(screen)
 	pygame.display.flip()
+	label = myfont.render("TEXT HERE", 1, (235,25,150))
+	screen.blit(label, (100, 100))
 
 	#pipe deletion
-	for Downpipe in pipes_group:
-		if Downpipe.rect.right < 0:
-			Downpipe.kill()
-			pipes_group.remove(Downpipe)
-	for Uppipe in pipes_group:
-		if Uppipe.rect.right < 0:
-			Downpipe.kill()
-			pipes_group.remove(Uppipe)
+	for x in pipes_group:
+		if x.rect.right < 0:
+			x.kill()
+			pipes_group.remove(x)
+	for y in gates:
+		if y.rect.right < 0:
+			y.kill()
+			gates.remove(y)
 
 	#game timers
-	pygame.time.wait(0)
 	if grav_counter > 100:
 		grav_counter = 0
 	else:
 		grav_counter += 1
 
-	if pipe_counter == 100 :
-		x = random.randint(0,120)
+	if pipe_counter == 120 :
+		x = random.randint(0,130)
 		u = Uppipe(x)
 		d = Downpipe(x)
 		pipes_group.add(u)
 		pipes_group.add(d)
 		pipe_counter = 0
+		g = Gate()
+		gates.add(g)
 	else:
 		pipe_counter += 1
+
+	pygame.time.wait(0)
